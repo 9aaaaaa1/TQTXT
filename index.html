@@ -1,279 +1,55 @@
 <!DOCTYPE html>
 <html lang="zh">
 <head>
-  <meta charset="UTF-8" />
-  <title>李沁专用</title>
-  <style>
-    body {
-      font-family: "Segoe UI", sans-serif;
-      background: linear-gradient(to right, #ece9e6, #ffffff);
-      margin: 0;
-      padding: 20px;
-    }
-    .container {
-      max-width: 800px;
-      background: #fff;
-      margin: auto;
-      padding: 30px;
-      border-radius: 16px;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
-    }
-    h2 {
-      text-align: center;
-      color: #333;
-      margin-bottom: 25px;
-      font-size: 26px;
-    }
-    label {
-      display: block;
-      margin-top: 12px;
-      font-weight: bold;
-      color: #444;
-    }
-    input[type="number"] {
-      width: 100%;
-      padding: 10px;
-      margin-top: 6px;
-      font-size: 16px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-    }
-    button {
-      padding: 10px 16px;
-      font-size: 16px;
-      margin-top: 16px;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      margin-right: 10px;
-    }
-    button:hover {
-      background-color: #45a049;
-    }
-    .result {
-      margin-top: 20px;
-      font-size: 18px;
-      color: #333;
-      background: #f0f9f0;
-      padding: 15px;
-      border-left: 5px solid #4CAF50;
-      border-radius: 8px;
-    }
-    table {
-      width: 100%;
-      margin-top: 20px;
-      border-collapse: collapse;
-    }
-    th, td {
-      text-align: center;
-      padding: 10px;
-      border: 1px solid #ccc;
-    }
-    th {
-      background-color: #f2f2f2;
-    }
-    .delete-btn {
-      background-color: #f44336;
-      color: white;
-      border: none;
-      padding: 6px 12px;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    .delete-btn:hover {
-      background-color: #d32f2f;
-    }
-    .section {
-      margin-top: 30px;
-    }
-    .header-with-button {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 30px;
-    }
-    .clear-btn {
-      background-color: #999;
-      padding: 8px 12px;
-      font-size: 14px;
-    }
-    .clear-btn:hover {
-      background-color: #777;
-    }
-    .inline-group {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    .inline-group input {
-      flex: 1;
-    }
-  </style>
+  <meta charset="UTF-8">
+  <title>提取TXT前N行</title>
 </head>
 <body>
-  <div class="container">
-    <h2>💼 李沁专用利润计算器</h2>
+  <h2>📄 提取 TXT 文件的前 N 行</h2>
 
-    <label>混合平台出号数：</label>
-    <input type="number" id="platformCount" placeholder="例如：500">
+  <input type="file" id="fileInput" accept=".txt"><br><br>
 
-    <label>混合平台单价：</label>
-    <input type="number" id="platformPrice" placeholder="例如：2">
+  <label>输入要提取的行数：</label>
+  <input type="number" id="lineCount" min="1" value="5"><br><br>
 
-    <label>其他成本：</label>
-    <input type="number" id="extraCost" placeholder="例如：100">
+  <button onclick="processFile()">提取并生成文件</button>
 
-    <label>今日出号总数：</label>
-    <input type="number" id="todayCount" placeholder="例如：550">
-
-    <label>今日单号售价：</label>
-    <input type="number" id="todayPrice" placeholder="例如：2.2">
-
-    <button onclick="calculate()">看看今天赚了多少钱</button>
-
-    <div class="result" id="resultArea"></div>
-
-    <div class="section header-with-button">
-      <h3>📘 历史记录</h3>
-      <button class="clear-btn" onclick="clearAllRecords()">清空全部记录</button>
-    </div>
-    <table id="historyTable">
-      <thead>
-        <tr>
-          <th>时间</th>
-          <th>总收入</th>
-          <th>总成本</th>
-          <th>利润</th>
-          <th>操作</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-
-    <div class="section">
-      <h3>💱 汇率换算</h3>
-      <div class="inline-group">
-        <input type="number" id="exchangeRate" placeholder="汇率，例如：7.2">
-        <button onclick="applyExchange()">汇率换算（LQSSB）</button>
-      </div>
-    </div>
-  </div>
+  <div id="result" style="margin-top:20px;"></div>
 
   <script>
-    let historyData = [];
+    function processFile() {
+      const fileInput = document.getElementById('fileInput');
+      const lineCount = parseInt(document.getElementById('lineCount').value);
 
-    function saveHistoryToLocalStorage() {
-      localStorage.setItem("profitHistory", JSON.stringify(historyData));
-    }
-
-    function loadHistoryFromLocalStorage() {
-      const data = localStorage.getItem("profitHistory");
-      if (data) {
-        historyData = JSON.parse(data);
-        renderHistory();
-      }
-    }
-
-    function clearAllRecords() {
-      if (confirm("确定要清空所有记录吗？此操作无法撤销！")) {
-        historyData = [];
-        saveHistoryToLocalStorage();
-        renderHistory();
-        document.getElementById("resultArea").innerHTML = "";
-      }
-    }
-
-    function formatCurrency(num) {
-      return "¥" + num.toFixed(2);
-    }
-
-    function getTimeNow() {
-      return new Date().toLocaleString();
-    }
-
-    function getDateOnly() {
-      return new Date().toISOString().slice(0, 10);
-    }
-
-    function calculate() {
-      const platformCount = parseFloat(document.getElementById("platformCount").value) || 0;
-      const platformPrice = parseFloat(document.getElementById("platformPrice").value) || 0;
-      const extraCost = parseFloat(document.getElementById("extraCost").value) || 0;
-      const todayCount = parseFloat(document.getElementById("todayCount").value) || 0;
-      const todayPrice = parseFloat(document.getElementById("todayPrice").value) || 0;
-
-      const platformCost = platformCount * platformPrice;
-      const totalCost = platformCost + extraCost;
-      const totalIncome = todayCount * todayPrice;
-      const profit = totalIncome - totalCost;
-
-      // ✅ 弹窗提醒（利润太低）
-      if (profit < 6000) {
-        alert("不如进场打螺丝 🧰🔩");
-      }
-
-      const time = getTimeNow();
-      const record = {
-        time: time,
-        date: getDateOnly(),
-        income: totalIncome,
-        cost: totalCost,
-        profit: profit
-      };
-      historyData.unshift(record);
-      saveHistoryToLocalStorage();
-
-      document.getElementById("resultArea").innerHTML = `
-        记录时间：${time}<br>
-        混合平台成本：${formatCurrency(platformCost)}<br>
-        总成本（含其他成本）：${formatCurrency(totalCost)}<br>
-        今日总收入：${formatCurrency(totalIncome)}<br>
-        <strong>利润：${formatCurrency(profit)}</strong>
-      `;
-      renderHistory();
-    }
-
-    function deleteRecord(index) {
-      historyData.splice(index, 1);
-      saveHistoryToLocalStorage();
-      renderHistory();
-    }
-
-    function renderHistory() {
-      const tbody = document.querySelector("#historyTable tbody");
-      tbody.innerHTML = "";
-      historyData.forEach((item, index) => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${item.time}</td>
-          <td>${formatCurrency(item.income)}</td>
-          <td>${formatCurrency(item.cost)}</td>
-          <td>${formatCurrency(item.profit)}</td>
-          <td><button class="delete-btn" onclick="deleteRecord(${index})">删除</button></td>
-        `;
-        tbody.appendChild(row);
-      });
-    }
-
-    function applyExchange() {
-      const rate = parseFloat(document.getElementById("exchangeRate").value);
-      if (!rate || rate <= 0) {
-        alert("请输入有效的汇率");
+      if (!fileInput.files[0]) {
+        alert("请先选择一个 TXT 文件！");
         return;
       }
 
-      const rows = document.querySelectorAll("#historyTable tbody tr");
-      rows.forEach((row, index) => {
-        const profitCell = row.cells[3];
-        const originalProfit = historyData[index].profit;
-        const converted = (originalProfit / rate).toFixed(2);
-        profitCell.innerHTML = `¥${originalProfit.toFixed(2)}<br>≈ $${converted}`;
-      });
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const content = e.target.result;
+        const lines = content.split(/\r?\n/);
+
+        const extractPart = lines.slice(0, lineCount).join("\n");
+        const remainingPart = lines.slice(lineCount).join("\n");
+
+        createDownloadLink(extractPart, '提取部分.txt');
+        createDownloadLink(remainingPart, '剩余部分.txt');
+      };
+      reader.readAsText(fileInput.files[0]);
     }
 
-    window.onload = loadHistoryFromLocalStorage;
+    function createDownloadLink(text, filename) {
+      const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.textContent = `📥 下载：${filename}`;
+      link.style.display = 'block';
+      document.getElementById('result').appendChild(link);
+    }
   </script>
 </body>
 </html>

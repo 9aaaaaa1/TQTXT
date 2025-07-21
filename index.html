@@ -3,55 +3,315 @@
 <head>
   <meta charset="UTF-8">
   <title>会发财集团</title>
+  <style>
+    body {
+      font-family: "Microsoft YaHei", sans-serif;
+      background: #f0f2f5;
+      padding: 30px;
+    }
+
+    h2, h3 {
+      margin-top: 20px;
+      color: #333;
+    }
+
+    .menu {
+      margin-bottom: 20px;
+    }
+
+    .menu button {
+      padding: 10px 20px;
+      margin-right: 10px;
+      font-size: 16px;
+      background-color: #1890ff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .menu button:hover {
+      background-color: #40a9ff;
+    }
+
+    .section {
+      display: none;
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .section.active {
+      display: block;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 5px;
+      margin-bottom: 10px;
+      box-sizing: border-box;
+    }
+
+    pre {
+      background: #f9f9f9;
+      padding: 10px;
+      border: 1px solid #ccc;
+      white-space: pre-wrap;
+    }
+  </style>
 </head>
 <body>
-  <h2>📄 提取 TXT 文件的前 N 行</h2>
 
-  <h2>          L           </h2>
+<h2>🛠 会发财集团多功能工具</h2>
 
-  <input type="file" id="fileInput" accept=".txt"><br><br>
+<div class="menu">
+  <button onclick="showSection('txt')">📂 TXT 文本提取</button>
+  <button onclick="showSection('report')">📊 报表工具</button>
+</div>
 
+<!-- TXT提取工具 -->
+<div id="section-txt" class="section">
+  <h3>📂 提取 TXT 文件的前 N 行</h3>
+
+  <input type="file" id="fileInput" accept=".txt"><br>
   <label>输入要提取的行数：</label>
-  <input type="number" id="lineCount" min="1" value="5"><br><br>
-
+  <input type="number" id="lineCount" min="1" value="5"><br>
   <button onclick="processFile()">提取并生成文件</button>
 
   <div id="result" style="margin-top:20px;"></div>
+</div>
 
-  <script>
-    function processFile() {
-      const fileInput = document.getElementById('fileInput');
-      const lineCount = parseInt(document.getElementById('lineCount').value);
+<!-- 报表工具 -->
+<div id="section-report" class="section">
+  <h3>📊 群出号报表工具</h3>
 
-      if (!fileInput.files[0]) {
-        alert("请先选择一个 TXT 文件！");
-        return;
+  <table id="groupTable">
+    <thead>
+      <tr>
+        <th>群名</th>
+        <th>出号数</th>
+        <th>单价</th>
+        <th>收入</th>
+        <th>备注</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <button onclick="addRow()">➕ 添加群</button>
+
+  <h4>参数设置</h4>
+  <label>真机/协议成本：</label>
+  <input type="number" id="baseCost" value="2795">
+  <label>工资支出：</label>
+  <input type="number" id="salaryCost" value="90">
+  <label>返点群名：</label>
+  <input type="text" id="rebateGroup" value="阿国群">
+  <label>返点比例：</label>
+  <input type="number" step="0.01" id="rebateRate" value="0.15">
+
+  <button onclick="calculate()">📊 计算报表</button>
+  <button onclick="exportTXT()">📥 导出报表</button>
+  <button onclick="exportHistory()">📤 导出历史</button>
+  <button onclick="clearHistory()">🗑️ 清除历史</button>
+
+  <h4>📄 报表预览：</h4>
+  <pre id="output">点击“计算报表”后显示</pre>
+
+  <h4>📈 历史利润记录</h4>
+  <ul id="historyList"></ul>
+</div>
+
+<script>
+  function showSection(id) {
+    document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+    document.getElementById('section-' + id).classList.add('active');
+  }
+
+  showSection('txt'); // 默认显示 txt 提取工具
+
+  // ================== TXT 提取 ==================
+  function processFile() {
+    const fileInput = document.getElementById('fileInput');
+    const lineCount = parseInt(document.getElementById('lineCount').value);
+    if (!fileInput.files[0]) return alert("请先选择 TXT 文件");
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      const lines = e.target.result.split(/\r?\n/);
+      const extractPart = lines.slice(0, lineCount).join("\n");
+      const remainingPart = lines.slice(lineCount).join("\n");
+
+      createDownloadLink(extractPart, '提取部分.txt');
+      createDownloadLink(remainingPart, '剩余部分.txt');
+    };
+    reader.readAsText(fileInput.files[0]);
+  }
+
+  function createDownloadLink(text, filename) {
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.textContent = `📥 下载：${filename}`;
+    link.style.display = 'block';
+    document.getElementById('result').appendChild(link);
+  }
+
+  // ================== 报表功能 ==================
+  let latestReport = '';
+  function addRow(group = '', count = '', price = '', remark = '') {
+    const tbody = document.querySelector('#groupTable tbody');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input value="${group}" class="groupName"></td>
+      <td><input type="number" value="${count}" class="count" oninput="updateIncome(this)"></td>
+      <td><input type="number" value="${price}" class="price" oninput="updateIncome(this)"></td>
+      <td><input class="income" readonly></td>
+      <td><input value="${remark}" class="remark"></td>
+      <td><button onclick="this.closest('tr').remove()">删除</button></td>
+    `;
+    tbody.appendChild(tr);
+    updateIncome(tr.querySelector('.count'));
+  }
+
+  function updateIncome(elem) {
+    const row = elem.closest('tr');
+    const count = parseFloat(row.querySelector('.count').value) || 0;
+    const price = parseFloat(row.querySelector('.price').value) || 0;
+    row.querySelector('.income').value = (count * price).toFixed(2);
+  }
+
+  function calculate() {
+    const rows = document.querySelectorAll('#groupTable tbody tr');
+    const baseCost = parseFloat(document.getElementById('baseCost').value) || 0;
+    const salaryCost = parseFloat(document.getElementById('salaryCost').value) || 0;
+    const rebateGroup = document.getElementById('rebateGroup').value.trim();
+    const rebateRate = parseFloat(document.getElementById('rebateRate').value) || 0;
+
+    let totalCount = 0, totalIncome = 0, rebateAmount = 0, lines = [];
+    rows.forEach(row => {
+      const group = row.querySelector('.groupName').value.trim();
+      const count = parseFloat(row.querySelector('.count').value) || 0;
+      const price = parseFloat(row.querySelector('.price').value) || 0;
+      const income = count * price;
+      const remark = row.querySelector('.remark').value.trim();
+      totalCount += count;
+      totalIncome += income;
+      let line = `${group.padEnd(8)} 出号数: ${count}    单价: ${price}    收入: ${income.toFixed(2)}`;
+      if (remark) line += `    备注: ${remark}`;
+      lines.push(line);
+      if (group === rebateGroup) rebateAmount = count * rebateRate;
+    });
+
+    const totalCost = baseCost + salaryCost + rebateAmount;
+    const profit = totalIncome - totalCost;
+    const agentFee = profit * 0.1;
+    const finalProfit = profit - agentFee;
+
+    let output = `📅 群发号明细\n\n`;
+    output += lines.map(line => line + '\n').join('\n');
+    output += `\n📌 合计出号数：${totalCount} 个\n\n`;
+    output += `📌 合计收入：${totalIncome.toFixed(2)} U\n\n`;
+    output += `一、真机协议成本：${baseCost.toFixed(2)} U\n\n`;
+    output += `二、工资支出：${salaryCost.toFixed(2)} U\n\n`;
+    output += `三、返点（${rebateGroup}）：${rebateAmount.toFixed(2)} U\n\n`;
+    output += `四、总支出：${totalCost.toFixed(2)} U\n\n`;
+    output += `五、利润：${totalIncome.toFixed(2)} - ${totalCost.toFixed(2)} = ${profit.toFixed(2)} U\n\n`;
+    output += `六、代理提成（10%）：${agentFee.toFixed(2)} U\n\n`;
+    output += `✅ 最终利润：${finalProfit.toFixed(2)} U\n`;
+
+    latestReport = output;
+    document.getElementById('output').textContent = output;
+
+    const today = new Date().toISOString().slice(0, 10);
+    let history = JSON.parse(localStorage.getItem('profitHistory') || '[]');
+    const currentProfit = parseFloat(finalProfit.toFixed(2));
+    const index = history.findIndex(item => item.date === today);
+    if (index >= 0) {
+      if (currentProfit > parseFloat(history[index].profit)) {
+        history[index].profit = currentProfit.toFixed(2);
       }
-
-      const reader = new FileReader();
-      reader.onload = function (e) {
-        const content = e.target.result;
-        const lines = content.split(/\r?\n/);
-
-        const extractPart = lines.slice(0, lineCount).join("\n");
-        const remainingPart = lines.slice(lineCount).join("\n");
-
-        createDownloadLink(extractPart, '提取部分.txt');
-        createDownloadLink(remainingPart, '剩余部分.txt');
-      };
-      reader.readAsText(fileInput.files[0]);
+    } else {
+      history.push({ date: today, profit: currentProfit.toFixed(2) });
     }
+    localStorage.setItem('profitHistory', JSON.stringify(history));
+    renderHistory();
+  }
 
-    function createDownloadLink(text, filename) {
-      const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      link.textContent = `📥 下载：${filename}`;
-      link.style.display = 'block';
-      document.getElementById('result').appendChild(link);
+  function exportTXT() {
+    if (!latestReport) return alert("请先点击“计算报表”");
+    const today = new Date().toISOString().slice(0, 10);
+    const blob = new Blob([latestReport], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `报表-${today}.txt`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  function renderHistory() {
+    const list = document.getElementById('historyList');
+    const history = JSON.parse(localStorage.getItem('profitHistory') || '[]');
+    list.innerHTML = '';
+    let total = 0;
+    history.forEach(item => {
+      total += parseFloat(item.profit);
+      const li = document.createElement('li');
+      li.textContent = `${item.date}：${item.profit} U`;
+      list.appendChild(li);
+    });
+    if (history.length > 0) {
+      const li = document.createElement('li');
+      li.innerHTML = `<strong>📊 总利润合计：${total.toFixed(2)} U</strong>`;
+      list.appendChild(li);
     }
-  </script>
+  }
+
+  function clearHistory() {
+    if (confirm("确定清除所有历史记录？")) {
+      localStorage.removeItem('profitHistory');
+      renderHistory();
+    }
+  }
+
+  function exportHistory() {
+    const history = JSON.parse(localStorage.getItem('profitHistory') || '[]');
+    if (!history.length) return alert("暂无历史记录");
+    let total = 0;
+    let text = `📈 历史利润记录\n\n`;
+    history.forEach(item => {
+      total += parseFloat(item.profit);
+      text += `${item.date}：${item.profit} U\n\n`;
+    });
+    text += `📊 总利润合计：${total.toFixed(2)} U\n`;
+
+    const today = new Date().toISOString().slice(0, 10);
+    const blob = new Blob([text], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `历史利润-${today}.txt`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  // 初始化
+  addRow('阿国群', 0,1.1 , '返点群');
+  renderHistory();
+</script>
 </body>
 </html>

@@ -127,6 +127,7 @@
   <button onclick="exportTXT()">📥 导出报表</button>
   <button onclick="exportHistory()">📤 导出历史</button>
   <button onclick="clearHistory()">🗑️ 清除历史</button>
+  <button onclick="clearDraft()">🗑 清除暂存</button>
 
   <h4>📄 报表预览：</h4>
   <pre id="output">点击“计算报表”后显示</pre>
@@ -183,7 +184,7 @@
       <td><input type="number" value="${price}" class="price" oninput="updateIncome(this)"></td>
       <td><input class="income" readonly></td>
       <td><input value="${remark}" class="remark"></td>
-      <td><button onclick="this.closest('tr').remove()">删除</button></td>
+      <td><button onclick="this.closest('tr').remove(); saveDraft();">删除</button></td>
     `;
     tbody.appendChild(tr);
     updateIncome(tr.querySelector('.count'));
@@ -194,6 +195,7 @@
     const count = parseFloat(row.querySelector('.count').value) || 0;
     const price = parseFloat(row.querySelector('.price').value) || 0;
     row.querySelector('.income').value = (count * price).toFixed(2);
+    saveDraft();
   }
 
   function calculate() {
@@ -309,9 +311,62 @@
     URL.revokeObjectURL(a.href);
   }
 
+  // ======= 暂存功能 =======
+  function saveDraft() {
+    const rows = document.querySelectorAll('#groupTable tbody tr');
+    const draftData = {
+      groups: [],
+      baseCost: document.getElementById('baseCost').value,
+      salaryCost: document.getElementById('salaryCost').value,
+      rebateGroup: document.getElementById('rebateGroup').value,
+      rebateRate: document.getElementById('rebateRate').value
+    };
+    rows.forEach(row => {
+      draftData.groups.push({
+        groupName: row.querySelector('.groupName').value,
+        count: row.querySelector('.count').value,
+        price: row.querySelector('.price').value,
+        remark: row.querySelector('.remark').value
+      });
+    });
+    localStorage.setItem('reportDraft', JSON.stringify(draftData));
+  }
+
+  function loadDraft() {
+    const draft = localStorage.getItem('reportDraft');
+    if (!draft) return false;
+    const data = JSON.parse(draft);
+    document.querySelector('#groupTable tbody').innerHTML = '';
+    data.groups.forEach(g => {
+      addRow(g.groupName, g.count, g.price, g.remark);
+    });
+    document.getElementById('baseCost').value = data.baseCost;
+    document.getElementById('salaryCost').value = data.salaryCost;
+    document.getElementById('rebateGroup').value = data.rebateGroup;
+    document.getElementById('rebateRate').value = data.rebateRate;
+    return true;
+  }
+
+  function clearDraft() {
+    if (confirm("确定清除暂存数据？")) {
+      localStorage.removeItem('reportDraft');
+      alert("暂存已清除");
+    }
+  }
+
+  document.addEventListener('input', function (e) {
+    if (e.target.closest('#section-report')) {
+      saveDraft();
+    }
+  });
+
   // 初始化
-  addRow('阿国群', 0,1.1 , '返点群');
-  renderHistory();
+  window.addEventListener('load', function () {
+    if (!loadDraft()) {
+      addRow('阿国群', 0, 1.1, '返点群');
+    }
+    renderHistory();
+  });
 </script>
 </body>
 </html>

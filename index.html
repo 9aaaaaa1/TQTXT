@@ -1,223 +1,372 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>📱查   会发财---手机号匹配提取工具</title>
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <meta charset="UTF-8">
+  <title>会发财集团</title>
   <style>
-    body{font-family:sans-serif;max-width:1000px;margin:20px auto;padding:0 15px;}
-    h1{margin-bottom:20px;}
-    .tabs{display:flex;gap:10px;margin-bottom:20px;}
-    .tab{flex:1;text-align:center;padding:10px;background:#f1f1f1;border-radius:6px;cursor:pointer;font-weight:bold;}
-    .tab.active{background:#1a73e8;color:#fff;}
-    .card{border:1px solid #ddd;border-radius:8px;padding:16px;}
-    .btn{padding:8px 14px;background:#1a73e8;color:#fff;border:none;border-radius:6px;cursor:pointer;margin:6px 6px 6px 0;display:inline-block;text-decoration:none;}
-    .btn.disabled{opacity:.5;pointer-events:none;}
-    textarea{width:100%;height:150px;margin-top:10px;}
-    .summary{margin-top:10px;font-weight:bold;}
-    .dropzone{border:2px dashed #ccc;padding:20px;text-align:center;margin:10px 0;cursor:pointer;background:#fafafa;}
-    .dropzone.dragover{background:#e3f2fd;border-color:#2196f3;}
-    .hidden{display:none;}
+    body {
+      font-family: "Microsoft YaHei", sans-serif;
+      background: #f0f2f5;
+      padding: 30px;
+    }
+
+    h2, h3 {
+      margin-top: 20px;
+      color: #333;
+    }
+
+    .menu {
+      margin-bottom: 20px;
+    }
+
+    .menu button {
+      padding: 10px 20px;
+      margin-right: 10px;
+      font-size: 16px;
+      background-color: #1890ff;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .menu button:hover {
+      background-color: #40a9ff;
+    }
+
+    .section {
+      display: none;
+      background: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .section.active {
+      display: block;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      text-align: center;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 5px;
+      margin-bottom: 10px;
+      box-sizing: border-box;
+    }
+
+    pre {
+      background: #f9f9f9;
+      padding: 10px;
+      border: 1px solid #ccc;
+      white-space: pre-wrap;
+    }
   </style>
 </head>
 <body>
-  <h1>📱 会发财---手机号匹配提取工具</h1>
 
-  <!-- 顶部 Tab -->
-  <div class="tabs">
-    <div class="tab active" onclick="showTab('part1', this)">文件1 vs 文件2 匹配</div>
-    <div class="tab" onclick="showTab('part2', this)">CSV vs TXT 匹配</div>
-    <div class="tab" onclick="showTab('part3', this)">号段筛选</div>
-  </div>
+<h2>🛠 会发财集团多功能工具</h2>
 
-  <!-- Part 1 -->
-  <div id="part1" class="card">
-    <h2>文件1 vs 文件2 匹配（支持精确 / 模糊）</h2>
-    <div class="dropzone" id="drop1">拖拽或点击上传 文件1（查重号码）</div>
-    <input type="file" id="file1" style="display:none" accept=".txt">
-    <div class="dropzone" id="drop2">拖拽或点击上传 文件2（原号包）</div>
-    <input type="file" id="file2" style="display:none" accept=".txt">
-    <div>
-      匹配方式：
-      <select id="matchType">
-        <option value="exact">精确匹配</option>
-        <option value="fuzzy">模糊匹配（前10位）</option>
-      </select>
-      <button class="btn" onclick="matchData()">开始匹配</button>
-      <button class="btn" onclick="downloadResult()">下载匹配结果</button>
-      <button class="btn" onclick="downloadUnmatched()">下载未匹配数据</button>
-    </div>
-    <div id="summary" class="summary">等待匹配...</div>
-    <h3>✅ 匹配结果</h3>
-    <textarea id="matchedBox">--</textarea>
-    <h3>❌ 未匹配结果</h3>
-    <textarea id="unmatchedBox">--</textarea>
-  </div>
+<div class="menu">
+  <button onclick="showSection('txt')">📂 TXT 文本提取</button>
+  <button onclick="showSection('report')">📊 报表工具</button>
+</div>
 
-  <!-- Part 2 -->
-  <div id="part2" class="card hidden">
-    <h2>CSV vs TXT 匹配</h2>
-    <h3>上传 CSV 文件 (含手机号列)</h3>
-    <input id="csvFiles" type="file" accept=".csv,.txt" multiple />
-    <h3>上传 TXT 文件 (数据源)</h3>
-    <input id="txtFiles" type="file" accept=".txt,.csv" multiple />
-    <div>
-      <button id="parseBtn" class="btn">开始匹配</button>
-      <a id="downloadBtn" class="btn disabled" href="#">下载结果 TXT</a>
-    </div>
-    <p id="resultInfo"></p>
-    <textarea id="previewBox" placeholder="结果预览 (前50行)"></textarea>
-  </div>
+<!-- TXT提取工具 -->
+<div id="section-txt" class="section">
+  <h3>📂 提取 TXT 文件的前 N 行</h3>
 
-  <!-- Part 3 -->
-  <div id="part3" class="card hidden">
-    <h2>号段筛选功能</h2>
-    <p>上传一个 TXT 文件，并输入要筛选的号段，例如 <b>255</b>：</p>
-    <input id="segmentFile" type="file" accept=".txt,.csv" />
-    <input id="segmentInput" type="text" placeholder="输入号段 (如 255)" />
-    <div>
-      <button id="segmentBtn" class="btn">筛选号段</button>
-      <a id="downloadSegBtn" class="btn disabled" href="#">下载号段结果</a>
-      <a id="downloadRemainBtn" class="btn disabled" href="#">下载剩余号码</a>
-    </div>
-    <p id="segmentInfo"></p>
-  </div>
+  <input type="file" id="fileInput" accept=".txt"><br>
+  <label>输入要提取的行数：</label>
+  <input type="number" id="lineCount" min="1" value="5"><br>
+  <button onclick="processFile()">提取并生成文件</button>
 
-  <script>
-    // Tab 切换
-    function showTab(id, el){
-      document.querySelectorAll('.card').forEach(c=>c.classList.add('hidden'));
-      document.getElementById(id).classList.remove('hidden');
-      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-      el.classList.add('active');
-    }
+  <div id="result" style="margin-top:20px;"></div>
+</div>
 
-    // 通用工具
-    function cleanPhone(v){ if(v==null) return ""; return String(v).replace(/\D+/g, ""); }
-    function detectDelimiter(sampleText){
-      const comma=(sampleText.match(/,/g)||[]).length;
-      const tab=(sampleText.match(/\t/g)||[]).length;
-      return (tab>comma) ? "\t" : ",";
-    }
-    function readAsText(file){
-      return new Promise((resolve,reject)=>{
-        const fr=new FileReader();
-        fr.onload=()=>resolve(fr.result);
-        fr.onerror=reject;
-        fr.readAsText(file,'utf-8');
-      });
-    }
+<!-- 报表工具 -->
+<div id="section-report" class="section">
+  <h3>📊 群出号报表工具</h3>
 
-    // ============ Part1 ============
-    let matchedLines=[], unmatchedLines=[];
-    function setupDropzone(dropId, inputId){
-      const dropzone=document.getElementById(dropId);
-      const fileInput=document.getElementById(inputId);
-      dropzone.addEventListener("click",()=>fileInput.click());
-      dropzone.addEventListener("dragover",e=>{e.preventDefault();dropzone.classList.add("dragover");});
-      dropzone.addEventListener("dragleave",()=>dropzone.classList.remove("dragover"));
-      dropzone.addEventListener("drop",e=>{
-        e.preventDefault();dropzone.classList.remove("dragover");
-        const file=e.dataTransfer.files[0];fileInput.files=e.dataTransfer.files;
-        dropzone.textContent=`已上传：${file.name}`;
-      });
-      fileInput.addEventListener("change",()=>{
-        if(fileInput.files.length>0) dropzone.textContent=`已上传：${fileInput.files[0].name}`;
-      });
-    }
-    setupDropzone("drop1","file1");
-    setupDropzone("drop2","file2");
+  <table id="groupTable">
+    <thead>
+      <tr>
+        <th>群名</th>
+        <th>出号数</th>
+        <th>单价</th>
+        <th>收入</th>
+        <th>备注</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <button onclick="addRow()">➕ 添加群</button>
 
-    async function matchData(){
-      document.getElementById('summary').textContent='正在匹配...';
-      document.getElementById('matchedBox').value='';
-      document.getElementById('unmatchedBox').value='';
-      matchedLines=[];unmatchedLines=[];
-      try{
-        const file1Text=await readAsText(document.getElementById('file1').files[0]);
-        const file2Text=await readAsText(document.getElementById('file2').files[0]);
-        const matchType=document.getElementById('matchType').value;
-        const phones1=file1Text.split(/\r?\n/).map(l=>l.trim().split(',')[0]).filter(x=>x);
-        const lines2=file2Text.split(/\r?\n/).filter(l=>l.trim());
-        let set1=new Set(matchType==='fuzzy'?phones1.map(p=>p.slice(0,10)):phones1);
-        matchedLines=lines2.filter(line=>{
-          const key=matchType==='fuzzy'?line.split(',')[0].slice(0,10):line.split(',')[0];
-          return set1.has(key);
-        });
-        unmatchedLines=lines2.filter(line=>{
-          const key=matchType==='fuzzy'?line.split(',')[0].slice(0,10):line.split(',')[0];
-          return !set1.has(key);
-        });
-        document.getElementById('summary').textContent=`匹配到 ${matchedLines.length} 条，未匹配 ${unmatchedLines.length} 条`;
-        document.getElementById('matchedBox').value=matchedLines.join("\n")||"--";
-        document.getElementById('unmatchedBox').value=unmatchedLines.join("\n")||"--";
-      }catch(e){console.error(e);document.getElementById('summary').textContent='匹配失败';}
-    }
-    function downloadResult(){
-      if(matchedLines.length===0){alert('无匹配结果');return;}
-      const blob=new Blob([matchedLines.join('\n')],{type:'text/plain'});
-      const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-      a.download='匹配结果.txt';a.click();URL.revokeObjectURL(a.href);
-    }
-    function downloadUnmatched(){
-      if(unmatchedLines.length===0){alert('无未匹配数据');return;}
-      const blob=new Blob([unmatchedLines.join('\n')],{type:'text/plain'});
-      const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-      a.download='未匹配数据.txt';a.click();URL.revokeObjectURL(a.href);
-    }
+  <h4>参数设置</h4>
+  <label>真机/协议成本：</label>
+  <input type="number" id="baseCost" value="2795">
+  <label>工资支出：</label>
+  <input type="number" id="salaryCost" value="90">
+  <label>返点群名：</label>
+  <input type="text" id="rebateGroup" value="阿国群">
+  <label>返点比例：</label>
+  <input type="number" step="0.01" id="rebateRate" value="0.15">
 
-    // ============ Part2 ============
-    let csvPhonesSet=new Set(), txtRows=[], matchedRows=[];
-    async function handleCSV(){
-      csvPhonesSet.clear(); if(!csvFiles.files?.length) return;
-      for(const file of csvFiles.files){
-        const text=await readAsText(file);
-        const parsed=Papa.parse(text,{header:true,skipEmptyLines:true});
-        const headers=parsed.meta.fields;
-        const phoneCol=headers.find(h=>h.includes("手机号")||h.toLowerCase().includes("phone"))||headers[0];
-        parsed.data.forEach(row=>{const ph=cleanPhone(row[phoneCol]);if(ph)csvPhonesSet.add(ph);});
-      }
-      resultInfo.textContent=`已加载 ${csvFiles.files.length} 个 CSV，共提取 ${csvPhonesSet.size} 个手机号`;
-    }
-    async function handleTXT(){
-      txtRows=[]; if(!txtFiles.files?.length) return;
-      for(const file of txtFiles.files){
-        const text=await readAsText(file);
-        const delim=detectDelimiter(text.slice(0,2000));
-        const parsed=Papa.parse(text,{header:false,delimiter:delim,skipEmptyLines:true});
-        parsed.data.forEach(r=>txtRows.push(r));
-      }
-      resultInfo.textContent=`已加载 ${txtFiles.files.length} 个 TXT，总行数 ${txtRows.length}`;
-    }
-    parseBtn.addEventListener('click',()=>{
-      matchedRows=[];txtRows.forEach(r=>{const phone=cleanPhone(r[0]);if(csvPhonesSet.has(phone))matchedRows.push(r);});
-      const lines=matchedRows.map(r=>r.join(","));
-      const blob=new Blob([lines.join("\n")],{type:'text/plain;charset=utf-8'});
-      const url=URL.createObjectURL(blob);downloadBtn.href=url;
-      downloadBtn.download=`matched_phone_data_${Date.now()}.txt`;downloadBtn.classList.remove('disabled');
-      resultInfo.textContent=`匹配完成：${matchedRows.length} 行`;previewBox.value=lines.slice(0,50).join("\n");
+  <button onclick="calculate()">📊 计算报表</button>
+  <button onclick="exportTXT()">📥 导出报表</button>
+  <button onclick="exportHistory()">📤 导出历史</button>
+  <button onclick="clearHistory()">🗑️ 清除历史</button>
+  <button onclick="clearDraft()">🗑 清除暂存</button>
+
+  <h4>📄 报表预览：</h4>
+  <pre id="output">点击“计算报表”后显示</pre>
+
+  <h4>📈 历史利润记录</h4>
+  <ul id="historyList"></ul>
+</div>
+
+<script>
+  function showSection(id) {
+    document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+    document.getElementById('section-' + id).classList.add('active');
+  }
+
+  showSection('txt'); // 默认显示 txt 提取工具
+
+  // ================== TXT 提取 ==================
+  function processFile() {
+    const fileInput = document.getElementById('fileInput');
+    const lineCount = parseInt(document.getElementById('lineCount').value);
+    if (!fileInput.files[0]) return alert("请先选择 TXT 文件");
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+      const lines = e.target.result.split(/\r?\n/);
+      const extractPart = lines.slice(0, lineCount).join("\n");
+      const remainingPart = lines.slice(lineCount).join("\n");
+
+      createDownloadLink(extractPart, '提取部分.txt');
+      createDownloadLink(remainingPart, '剩余部分.txt');
+    };
+    reader.readAsText(fileInput.files[0]);
+  }
+
+  function createDownloadLink(text, filename) {
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.textContent = `📥 下载：${filename}`;
+    link.style.display = 'block';
+    document.getElementById('result').appendChild(link);
+  }
+
+  // ================== 报表功能 ==================
+  let latestReport = '';
+  function addRow(group = '', count = '', price = '', remark = '') {
+    const tbody = document.querySelector('#groupTable tbody');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input value="${group}" class="groupName"></td>
+      <td><input type="number" value="${count}" class="count" oninput="updateIncome(this)"></td>
+      <td><input type="number" value="${price}" class="price" oninput="updateIncome(this)"></td>
+      <td><input class="income" readonly></td>
+      <td><input value="${remark}" class="remark"></td>
+      <td><button onclick="this.closest('tr').remove(); saveDraft();">删除</button></td>
+    `;
+    tbody.appendChild(tr);
+    updateIncome(tr.querySelector('.count'));
+  }
+
+  function updateIncome(elem) {
+    const row = elem.closest('tr');
+    const count = parseFloat(row.querySelector('.count').value) || 0;
+    const price = parseFloat(row.querySelector('.price').value) || 0;
+    row.querySelector('.income').value = (count * price).toFixed(2);
+    saveDraft();
+  }
+
+  function calculate() {
+    const rows = document.querySelectorAll('#groupTable tbody tr');
+    const baseCost = parseFloat(document.getElementById('baseCost').value) || 0;
+    const salaryCost = parseFloat(document.getElementById('salaryCost').value) || 0;
+    const rebateGroup = document.getElementById('rebateGroup').value.trim();
+    const rebateRate = parseFloat(document.getElementById('rebateRate').value) || 0;
+
+    let totalCount = 0, totalIncome = 0, rebateAmount = 0, lines = [];
+    rows.forEach(row => {
+      const group = row.querySelector('.groupName').value.trim();
+      const count = parseFloat(row.querySelector('.count').value) || 0;
+      const price = parseFloat(row.querySelector('.price').value) || 0;
+      const income = count * price;
+      const remark = row.querySelector('.remark').value.trim();
+      totalCount += count;
+      totalIncome += income;
+      let line = `${group.padEnd(8)} 出号数: ${count}    单价: ${price}    收入: ${income.toFixed(2)}`;
+      if (remark) line += `    备注: ${remark}`;
+      lines.push(line);
+      if (group === rebateGroup) rebateAmount = count * rebateRate;
     });
-    csvFiles.addEventListener('change',handleCSV);
-    txtFiles.addEventListener('change',handleTXT);
 
-    // ============ Part3 ============
-    segmentBtn.addEventListener('click',async()=>{
-      if(!segmentFile.files?.length){alert('请先选择一个TXT文件');return;}
-      const text=await readAsText(segmentFile.files[0]);
-      const delim=detectDelimiter(text.slice(0,2000));
-      const parsed=Papa.parse(text,{header:false,delimiter:delim,skipEmptyLines:true});
-      const rows=parsed.data;const seg=segmentInput.value.trim();
-      if(!seg){alert('请输入号段');return;}
-      let matched=[],remain=[];
-      rows.forEach(r=>{const ph=cleanPhone(r[0]);if(ph.startsWith(seg))matched.push(r);else remain.push(r);});
-      const matchedLines=matched.map(r=>r.join(",")), remainLines=remain.map(r=>r.join(","));
-      const blob1=new Blob([matchedLines.join("\n")],{type:'text/plain;charset=utf-8'});
-      const blob2=new Blob([remainLines.join("\n")],{type:'text/plain;charset=utf-8'});
-      downloadSegBtn.href=URL.createObjectURL(blob1);downloadSegBtn.download=`segment_${seg}_${matched.length}_${Date.now()}.txt`;downloadSegBtn.textContent=`下载号段结果 (${matched.length} 行)`;downloadSegBtn.classList.remove('disabled');
-      downloadRemainBtn.href=URL.createObjectURL(blob2);downloadRemainBtn.download=`remain_except_${seg}_${remain.length}_${Date.now()}.txt`;downloadRemainBtn.textContent=`下载剩余号码 (${remain.length} 行)`;downloadRemainBtn.classList.remove('disabled');
-      segmentInfo.textContent=`筛选完成：号段 ${seg} → ${matched.length} 行；剩余 ${remain.length} 行`;
+    const totalCost = baseCost + salaryCost + rebateAmount;
+    const profit = totalIncome - totalCost;
+    const agentFee = profit * 0.1;
+    const finalProfit = profit - agentFee;
+
+    let output = `📅 群发号明细\n\n`;
+    output += lines.map(line => line + '\n').join('\n');
+    output += `\n📌 合计出号数：${totalCount} 个\n\n`;
+    output += `📌 合计收入：${totalIncome.toFixed(2)} U\n\n`;
+    output += `一、真机协议成本：${baseCost.toFixed(2)} U\n\n`;
+    output += `二、工资支出：${salaryCost.toFixed(2)} U\n\n`;
+    output += `三、返点（${rebateGroup}）：${rebateAmount.toFixed(2)} U\n\n`;
+    output += `四、总支出：${totalCost.toFixed(2)} U\n\n`;
+    output += `五、利润：${totalIncome.toFixed(2)} - ${totalCost.toFixed(2)} = ${profit.toFixed(2)} U\n\n`;
+    output += `六、代理提成（10%）：${agentFee.toFixed(2)} U\n\n`;
+    output += `✅ 最终利润：${finalProfit.toFixed(2)} U\n`;
+
+    latestReport = output;
+    document.getElementById('output').textContent = output;
+
+    const today = new Date().toISOString().slice(0, 10);
+    let history = JSON.parse(localStorage.getItem('profitHistory') || '[]');
+    const currentProfit = parseFloat(finalProfit.toFixed(2));
+    const index = history.findIndex(item => item.date === today);
+    if (index >= 0) {
+      if (currentProfit > parseFloat(history[index].profit)) {
+        history[index].profit = currentProfit.toFixed(2);
+      }
+    } else {
+      history.push({ date: today, profit: currentProfit.toFixed(2) });
+    }
+    localStorage.setItem('profitHistory', JSON.stringify(history));
+    renderHistory();
+  }
+
+  function exportTXT() {
+    if (!latestReport) return alert("请先点击“计算报表”");
+    const today = new Date().toISOString().slice(0, 10);
+    const blob = new Blob([latestReport], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `报表-${today}.txt`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  function renderHistory() {
+    const list = document.getElementById('historyList');
+    const history = JSON.parse(localStorage.getItem('profitHistory') || '[]');
+    list.innerHTML = '';
+    let total = 0;
+    history.forEach(item => {
+      total += parseFloat(item.profit);
+      const li = document.createElement('li');
+      li.textContent = `${item.date}：${item.profit} U`;
+      list.appendChild(li);
     });
-  </script>
+    if (history.length > 0) {
+      const li = document.createElement('li');
+      li.innerHTML = `<strong>📊 总利润合计：${total.toFixed(2)} U</strong>`;
+      list.appendChild(li);
+    }
+  }
+
+  function clearHistory() {
+    if (confirm("确定清除所有历史记录？")) {
+      localStorage.removeItem('profitHistory');
+      renderHistory();
+    }
+  }
+
+  function exportHistory() {
+    const history = JSON.parse(localStorage.getItem('profitHistory') || '[]');
+    if (!history.length) return alert("暂无历史记录");
+    let total = 0;
+    let text = `📈 历史利润记录\n\n`;
+    history.forEach(item => {
+      total += parseFloat(item.profit);
+      text += `${item.date}：${item.profit} U\n\n`;
+    });
+    text += `📊 总利润合计：${total.toFixed(2)} U\n`;
+
+    const today = new Date().toISOString().slice(0, 10);
+    const blob = new Blob([text], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `历史利润-${today}.txt`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  // ======= 暂存功能 =======
+  function saveDraft() {
+    const rows = document.querySelectorAll('#groupTable tbody tr');
+    const draftData = {
+      groups: [],
+      baseCost: document.getElementById('baseCost').value,
+      salaryCost: document.getElementById('salaryCost').value,
+      rebateGroup: document.getElementById('rebateGroup').value,
+      rebateRate: document.getElementById('rebateRate').value
+    };
+    rows.forEach(row => {
+      draftData.groups.push({
+        groupName: row.querySelector('.groupName').value,
+        count: row.querySelector('.count').value,
+        price: row.querySelector('.price').value,
+        remark: row.querySelector('.remark').value
+      });
+    });
+    localStorage.setItem('reportDraft', JSON.stringify(draftData));
+  }
+
+  function loadDraft() {
+    const draft = localStorage.getItem('reportDraft');
+    if (!draft) return false;
+    const data = JSON.parse(draft);
+    document.querySelector('#groupTable tbody').innerHTML = '';
+    data.groups.forEach(g => {
+      addRow(g.groupName, g.count, g.price, g.remark);
+    });
+    document.getElementById('baseCost').value = data.baseCost;
+    document.getElementById('salaryCost').value = data.salaryCost;
+    document.getElementById('rebateGroup').value = data.rebateGroup;
+    document.getElementById('rebateRate').value = data.rebateRate;
+    return true;
+  }
+
+  function clearDraft() {
+    if (confirm("确定清除暂存数据？")) {
+      localStorage.removeItem('reportDraft');
+      alert("暂存已清除");
+    }
+  }
+
+  document.addEventListener('input', function (e) {
+    if (e.target.closest('#section-report')) {
+      saveDraft();
+    }
+  });
+
+  // 初始化
+  window.addEventListener('load', function () {
+    if (!loadDraft()) {
+      addRow('阿国群', 0, 1.1, '返点群');
+    }
+    renderHistory();
+  });
+</script>
 </body>
 </html>

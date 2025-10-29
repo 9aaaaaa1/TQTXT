@@ -129,6 +129,11 @@
   <button onclick="clearHistory()">🗑️ 清除历史</button>
   <button onclick="clearDraft()">🗑 清除暂存</button>
 
+  <!-- ✅ 新增的 JSON 导入导出功能按钮 -->
+  <button id="exportJsonBtn">💾 导出报表 JSON</button>
+  <button id="importJsonBtn">📂 导入报表 JSON</button>
+  <input type="file" id="importJsonFile" accept=".json" style="display:none;">
+
   <h4>📄 报表预览：</h4>
   <pre id="output">点击“计算报表”后显示</pre>
 
@@ -358,6 +363,43 @@
     if (e.target.closest('#section-report')) {
       saveDraft();
     }
+  });
+
+  // ✅ 新增导入/导出 JSON 功能
+  document.getElementById('exportJsonBtn').addEventListener('click', () => {
+    const report = localStorage.getItem('reportDraft');
+    const history = localStorage.getItem('profitHistory');
+    if (!report && !history) return alert('⚠️ 没有可导出的数据！');
+    const data = { reportDraft: JSON.parse(report || '{}'), profitHistory: JSON.parse(history || '[]') };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `报表备份-${new Date().toLocaleDateString()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  const fileInput = document.getElementById('importJsonFile');
+  document.getElementById('importJsonBtn').addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = evt => {
+      try {
+        const json = JSON.parse(evt.target.result);
+        if (!json || typeof json !== 'object') throw new Error();
+        if (json.reportDraft) localStorage.setItem('reportDraft', JSON.stringify(json.reportDraft));
+        if (json.profitHistory) localStorage.setItem('profitHistory', JSON.stringify(json.profitHistory));
+        alert('✅ 导入成功，页面将自动刷新以加载新数据。');
+        location.reload();
+      } catch {
+        alert('❌ 文件格式错误，请确认 JSON 内容正确。');
+      }
+    };
+    reader.readAsText(file);
+    fileInput.value = '';
   });
 
   // 初始化

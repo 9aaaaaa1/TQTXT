@@ -220,6 +220,12 @@
         const income = count * price;
         const remark = row.querySelector('.remark').value.trim();
         
+        // 新增情况：出号数 > 0 且 收入为负
+        if (count > 0 && income < 0) {
+            errorMessages.push(`问题：群【${group}】的出号数为 ${count}，但收入为 负，卖什么号不要卖了 还倒贴！！`);
+        }
+
+        // 原有情况：出号数 > 0 且 收入为 0
         if (count > 0 && income === 0) {
             errorMessages.push(`问题：群【${group}】的出号数为 ${count}，但收入为 0，不要这样帮老板省钱！！`);
         }

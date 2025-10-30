@@ -211,24 +211,36 @@
     const rebateRate = parseFloat(document.getElementById('rebateRate').value) || 0;
 
     let totalCount = 0, totalIncome = 0, rebateAmount = 0, lines = [];
+    let errorMessages = [];
+
     rows.forEach(row => {
-      const group = row.querySelector('.groupName').value.trim();
-      const count = parseFloat(row.querySelector('.count').value) || 0;
-      const price = parseFloat(row.querySelector('.price').value) || 0;
-      const income = count * price;
-      const remark = row.querySelector('.remark').value.trim();
-      totalCount += count;
-      totalIncome += income;
-      let line = `${group.padEnd(8)} 出号数: ${count}    单价: ${price}    收入: ${income.toFixed(2)}`;
-      if (remark) line += `    备注: ${remark}`;
-      lines.push(line);
-      if (group === rebateGroup) rebateAmount = count * rebateRate;
+        const group = row.querySelector('.groupName').value.trim();
+        const count = parseFloat(row.querySelector('.count').value) || 0;
+        const price = parseFloat(row.querySelector('.price').value) || 0;
+        const income = count * price;
+        const remark = row.querySelector('.remark').value.trim();
+        
+        if (count > 0 && income === 0) {
+            errorMessages.push(`问题：群【${group}】的出号数为 ${count}，但收入为 0，不要这样帮老板省钱！！`);
+        }
+
+        totalCount += count;
+        totalIncome += income;
+        let line = `${group.padEnd(8)} 出号数: ${count}    单价: ${price}    收入: ${income.toFixed(2)}`;
+        if (remark) line += `    备注: ${remark}`;
+        lines.push(line);
+        if (group === rebateGroup) rebateAmount = count * rebateRate;
     });
 
     const totalCost = baseCost + salaryCost + rebateAmount;
     const profit = totalIncome - totalCost;
     const agentFee = profit * 0.1;
     const finalProfit = profit - agentFee;
+
+    if (errorMessages.length > 0) {
+        alert(`⚠️ 导出报表时出错：\n\n${errorMessages.join('\n')}`);
+        return;
+    }
 
     let output = `📅 群发号明细\n\n`;
     output += lines.map(line => line + '\n').join('\n');
@@ -250,11 +262,11 @@
     const currentProfit = parseFloat(finalProfit.toFixed(2));
     const index = history.findIndex(item => item.date === today);
     if (index >= 0) {
-      if (currentProfit > parseFloat(history[index].profit)) {
-        history[index].profit = currentProfit.toFixed(2);
-      }
+        if (currentProfit > parseFloat(history[index].profit)) {
+            history[index].profit = currentProfit.toFixed(2);
+        }
     } else {
-      history.push({ date: today, profit: currentProfit.toFixed(2) });
+        history.push({ date: today, profit: currentProfit.toFixed(2) });
     }
     localStorage.setItem('profitHistory', JSON.stringify(history));
     renderHistory();

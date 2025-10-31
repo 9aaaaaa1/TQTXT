@@ -75,10 +75,10 @@
   <input type="number" id="baseCost" value="2795">
   
   <!-- ✅ 改为 工资A+B -->
-  <label>工资支出 <input type="text" id="salaryLabelA" value="A" style="width:40px;text-align:center;"> ：</label>
+  <label>工资支出 <input type="text" id="salaryLabelA" value="F" style="width:40px;text-align:center;"> ：</label>
 <input type="number" id="salaryCostA" value="70">
 
-<label>工资支出 <input type="text" id="salaryLabelB" value="B" style="width:40px;text-align:center;"> ：</label>
+<label>工资支出 <input type="text" id="salaryLabelB" value="Y" style="width:40px;text-align:center;"> ：</label>
 <input type="number" id="salaryCostB" value="40">
 
 
@@ -386,14 +386,13 @@ fileInput.addEventListener('change', e => {
     renderHistory();
   });
 
-// ============ 工资支出汇总功能 ============
+// ============ 工资支出汇总功能（增强版） ============
 function sumSalaryReports() {
   const files = document.getElementById('salaryFiles').files;
   if (!files.length) return alert("请先选择一份或多份报表 TXT 文件！");
 
-  let totalA = 0, totalB = 0;
-  let lines = [];
-
+  const salaryTotals = {}; // 动态记录工资类型与金额
+  const lines = [];
   let processed = 0;
 
   Array.from(files).forEach(file => {
@@ -401,32 +400,32 @@ function sumSalaryReports() {
     reader.onload = e => {
       const text = e.target.result;
 
-      // ✅ 匹配工资支出任意标签（如 A、B、自定义名称）
-      const regexA = /工资支出([^\：:]+)：([\d.]+)/;
-      const regexB = /工资支出([^\：:]+)：([\d.]+)/g;
+      // ✅ 匹配所有 “工资支出X：金额”
+      const matches = [...text.matchAll(/工资支出([^\：:]+)：\s*([\d.]+)/g)];
 
-      const matches = [...text.matchAll(regexB)];
-      let foundA = null, foundB = null;
+      matches.forEach(m => {
+        const label = m[1].trim();  // 工资标签，如 A/B/F/Y...
+        const amount = parseFloat(m[2]) || 0;
 
-      if (matches.length >= 1) foundA = matches[0];
-      if (matches.length >= 2) foundB = matches[1];
+        // 汇总
+        if (!salaryTotals[label]) salaryTotals[label] = 0;
+        salaryTotals[label] += amount;
 
-      if (foundA) {
-        totalA += parseFloat(foundA[2]) || 0;
-        lines.push(`${file.name} - 工资支出${foundA[1]}：${foundA[2]} U`);
-      }
-      if (foundB) {
-        totalB += parseFloat(foundB[2]) || 0;
-        lines.push(`${file.name} - 工资支出${foundB[1]}：${foundB[2]} U`);
-      }
+        lines.push(`${file.name} - 工资支出${label}：${amount} U`);
+      });
 
       processed++;
       if (processed === files.length) {
-        const total = (totalA + totalB).toFixed(2);
+        // 生成输出
         let summary = `📊 汇总明细：\n\n${lines.join('\n')}\n\n`;
-        summary += `📌 工资支出A合计：${totalA.toFixed(2)} U\n`;
-        summary += `📌 工资支出B合计：${totalB.toFixed(2)} U\n`;
-        summary += `✅ 工资支出总计：${total} U\n`;
+
+        let grandTotal = 0;
+        for (const [label, total] of Object.entries(salaryTotals)) {
+          summary += `📌 工资支出${label}合计：${total.toFixed(2)} U\n`;
+          grandTotal += total;
+        }
+
+        summary += `\n✅ 工资支出总计：${grandTotal.toFixed(2)} U\n`;
         document.getElementById('salarySummary').textContent = summary;
       }
     };

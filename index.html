@@ -9,67 +9,25 @@
       background: #f0f2f5;
       padding: 30px;
     }
-
-    h2, h3 {
-      margin-top: 20px;
-      color: #333;
-    }
-
-    .menu {
-      margin-bottom: 20px;
-    }
-
+    h2, h3 { margin-top: 20px; color: #333; }
+    .menu { margin-bottom: 20px; }
     .menu button {
-      padding: 10px 20px;
-      margin-right: 10px;
-      font-size: 16px;
-      background-color: #1890ff;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
+      padding: 10px 20px; margin-right: 10px; font-size: 16px;
+      background-color: #1890ff; color: white; border: none; border-radius: 4px; cursor: pointer;
     }
-
-    .menu button:hover {
-      background-color: #40a9ff;
-    }
-
+    .menu button:hover { background-color: #40a9ff; }
     .section {
-      display: none;
-      background: #fff;
-      padding: 20px;
-      border-radius: 8px;
+      display: none; background: #fff; padding: 20px; border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
-
-    .section.active {
-      display: block;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-    }
-
-    th, td {
-      border: 1px solid #ccc;
-      padding: 8px;
-      text-align: center;
-    }
-
+    .section.active { display: block; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
     input, textarea {
-      width: 100%;
-      padding: 5px;
-      margin-bottom: 10px;
-      box-sizing: border-box;
+      width: 100%; padding: 5px; margin-bottom: 10px; box-sizing: border-box;
     }
-
     pre {
-      background: #f9f9f9;
-      padding: 10px;
-      border: 1px solid #ccc;
-      white-space: pre-wrap;
+      background: #f9f9f9; padding: 10px; border: 1px solid #ccc; white-space: pre-wrap;
     }
   </style>
 </head>
@@ -82,16 +40,20 @@
   <button onclick="showSection('report')">📊 报表工具</button>
 </div>
 
-<!-- TXT提取工具 -->
+<!-- TXT提取 -->
 <div id="section-txt" class="section">
   <h3>📂 提取 TXT 文件的前 N 行</h3>
-
   <input type="file" id="fileInput" accept=".txt"><br>
   <label>输入要提取的行数：</label>
   <input type="number" id="lineCount" min="1" value="5"><br>
   <button onclick="processFile()">提取并生成文件</button>
-
   <div id="result" style="margin-top:20px;"></div>
+<hr style="margin:30px 0;">
+<h3>💰 支出汇总工具</h3>
+<input type="file" id="salaryFiles" accept=".txt" multiple><br><br>
+<button onclick="sumSalaryReports()">计算工资支出汇总</button>
+<pre id="salarySummary" style="margin-top:20px;">等待导入报表文件...</pre>
+
 </div>
 
 <!-- 报表工具 -->
@@ -101,12 +63,7 @@
   <table id="groupTable">
     <thead>
       <tr>
-        <th>群名</th>
-        <th>出号数</th>
-        <th>单价</th>
-        <th>收入</th>
-        <th>备注</th>
-        <th>操作</th>
+        <th>群名</th><th>出号数</th><th>单价</th><th>收入</th><th>备注</th><th>操作</th>
       </tr>
     </thead>
     <tbody></tbody>
@@ -116,8 +73,15 @@
   <h4>参数设置</h4>
   <label>真机/协议成本：</label>
   <input type="number" id="baseCost" value="2795">
-  <label>工资支出：</label>
-  <input type="number" id="salaryCost" value="90">
+  
+  <!-- ✅ 改为 工资A+B -->
+  <label>工资支出 <input type="text" id="salaryLabelA" value="A" style="width:40px;text-align:center;"> ：</label>
+<input type="number" id="salaryCostA" value="70">
+
+<label>工资支出 <input type="text" id="salaryLabelB" value="B" style="width:40px;text-align:center;"> ：</label>
+<input type="number" id="salaryCostB" value="40">
+
+
   <label>返点群名：</label>
   <input type="text" id="rebateGroup" value="阿国群">
   <label>返点比例：</label>
@@ -128,8 +92,6 @@
   <button onclick="exportHistory()">📤 导出历史</button>
   <button onclick="clearHistory()">🗑️ 清除历史</button>
   <button onclick="clearDraft()">🗑 清除暂存</button>
-
-  <!-- ✅ 新增的 JSON 导入导出功能按钮 -->
   <button id="exportJsonBtn">💾 导出报表 JSON</button>
   <button id="importJsonBtn">📂 导入报表 JSON</button>
   <input type="file" id="importJsonFile" accept=".json" style="display:none;">
@@ -142,283 +104,279 @@
 </div>
 
 <script>
-  function showSection(id) {
-    document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
-    document.getElementById('section-' + id).classList.add('active');
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+  document.getElementById('section-' + id).classList.add('active');
+}
+showSection('txt');
+
+// ============ TXT 功能 ============
+function processFile() {
+  const fileInput = document.getElementById('fileInput');
+  const lineCount = parseInt(document.getElementById('lineCount').value);
+  if (!fileInput.files[0]) return alert("请先选择 TXT 文件");
+  const reader = new FileReader();
+  reader.onload = function (e) {
+    const lines = e.target.result.split(/\r?\n/);
+    const extractPart = lines.slice(0, lineCount).join("\n");
+    const remainingPart = lines.slice(lineCount).join("\n");
+    createDownloadLink(extractPart, '提取部分.txt');
+    createDownloadLink(remainingPart, '剩余部分.txt');
+  };
+  reader.readAsText(fileInput.files[0]);
+}
+function createDownloadLink(text, filename) {
+  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.textContent = `📥 下载：${filename}`;
+  link.style.display = 'block';
+  document.getElementById('result').appendChild(link);
+}
+
+// ============ 报表功能 ============
+let latestReport = '';
+function addRow(group = '', count = '', price = '', remark = '') {
+  const tbody = document.querySelector('#groupTable tbody');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td><input value="${group}" class="groupName"></td>
+    <td><input type="number" value="${count}" class="count" oninput="updateIncome(this)"></td>
+    <td><input type="number" value="${price}" class="price" oninput="updateIncome(this)"></td>
+    <td><input class="income" readonly></td>
+    <td><input value="${remark}" class="remark"></td>
+    <td><button onclick="this.closest('tr').remove(); saveDraft();">删除</button></td>
+  `;
+  tbody.appendChild(tr);
+  updateIncome(tr.querySelector('.count'));
+}
+
+function updateIncome(elem) {
+  const row = elem.closest('tr');
+  const count = parseFloat(row.querySelector('.count').value) || 0;
+  const price = parseFloat(row.querySelector('.price').value) || 0;
+  row.querySelector('.income').value = (count * price).toFixed(2);
+  saveDraft();
+}
+
+function calculate() {
+  const rows = document.querySelectorAll('#groupTable tbody tr');
+  const baseCost = parseFloat(document.getElementById('baseCost').value) || 0;
+
+  // ✅ 新增工资A+B计算
+  const salaryA = parseFloat(document.getElementById('salaryCostA').value) || 0;
+  const salaryB = parseFloat(document.getElementById('salaryCostB').value) || 0;
+  const salaryCost = salaryA + salaryB;
+
+  const rebateGroup = document.getElementById('rebateGroup').value.trim();
+  const rebateRate = parseFloat(document.getElementById('rebateRate').value) || 0;
+
+  let totalCount = 0, totalIncome = 0, rebateAmount = 0, lines = [];
+  let errorMessages = [];
+
+  rows.forEach(row => {
+      const group = row.querySelector('.groupName').value.trim();
+      const count = parseFloat(row.querySelector('.count').value) || 0;
+      const price = parseFloat(row.querySelector('.price').value) || 0;
+      const income = count * price;
+      const remark = row.querySelector('.remark').value.trim();
+
+      if (count > 0 && income < 0)
+        errorMessages.push(`问题：群【${group}】的出号数为 ${count}，但收入为 负，卖什么号不要卖了 还倒贴！！`);
+      if (count > 0 && income === 0)
+        errorMessages.push(`问题：群【${group}】的出号数为 ${count}，但收入为 0，不要这样帮老板省钱！！`);
+
+      totalCount += count;
+      totalIncome += income;
+      let line = `${group.padEnd(8)} 出号数: ${count}    单价: ${price}    收入: ${income.toFixed(2)}`;
+      if (remark) line += `    备注: ${remark}`;
+      lines.push(line);
+      if (group === rebateGroup) rebateAmount = count * rebateRate;
+  });
+
+  const totalCost = baseCost + salaryCost + rebateAmount;
+  const profit = totalIncome - totalCost;
+  const agentFee = profit * 0.1;
+  const finalProfit = profit - agentFee;
+
+  if (errorMessages.length > 0) {
+      alert(`⚠️ 导出报表时出错：\n\n${errorMessages.join('\n')}`);
+      return;
   }
 
-  showSection('txt'); // 默认显示 txt 提取工具
+  // ✅ 报表中增加工资A/B显示
+  let output = `📅 群发号明细\n\n`;
+  output += lines.map(line => line + '\n').join('\n');
+  output += `\n📌 合计出号数：${totalCount} 个\n\n`;
+  output += `📌 合计收入：${totalIncome.toFixed(2)} U\n\n`;
+  output += `一、真机协议成本：${baseCost.toFixed(2)} U\n\n`;
+const labelA = document.getElementById('salaryLabelA').value.trim() || 'A';
+const labelB = document.getElementById('salaryLabelB').value.trim() || 'B';
 
-  // ================== TXT 提取 ==================
-  function processFile() {
-    const fileInput = document.getElementById('fileInput');
-    const lineCount = parseInt(document.getElementById('lineCount').value);
-    if (!fileInput.files[0]) return alert("请先选择 TXT 文件");
+output += `二、工资支出${labelA}：${salaryA.toFixed(2)} U\n\n`;
+output += `三、工资支出${labelB}：${salaryB.toFixed(2)} U\n\n`;
 
-    const reader = new FileReader();
-    reader.onload = function (e) {
-      const lines = e.target.result.split(/\r?\n/);
-      const extractPart = lines.slice(0, lineCount).join("\n");
-      const remainingPart = lines.slice(lineCount).join("\n");
+  output += `四、返点（${rebateGroup}）：${rebateAmount.toFixed(2)} U\n\n`;
+  output += `五、总支出：${totalCost.toFixed(2)} U\n\n`;
+  output += `六、利润：${totalIncome.toFixed(2)} - ${totalCost.toFixed(2)} = ${profit.toFixed(2)} U\n\n`;
+  output += `七、代理提成（10%）：${agentFee.toFixed(2)} U\n\n`;
+  output += `✅ 最终利润：${finalProfit.toFixed(2)} U\n`;
 
-      createDownloadLink(extractPart, '提取部分.txt');
-      createDownloadLink(remainingPart, '剩余部分.txt');
-    };
-    reader.readAsText(fileInput.files[0]);
+  latestReport = output;
+  document.getElementById('output').textContent = output;
+
+  const today = new Date().toISOString().slice(0, 10);
+  let history = JSON.parse(localStorage.getItem('profitHistory') || '[]');
+  const currentProfit = parseFloat(finalProfit.toFixed(2));
+  const index = history.findIndex(item => item.date === today);
+  if (index >= 0) {
+      if (currentProfit > parseFloat(history[index].profit)) {
+          history[index].profit = currentProfit.toFixed(2);
+      }
+  } else {
+      history.push({ date: today, profit: currentProfit.toFixed(2) });
   }
+  localStorage.setItem('profitHistory', JSON.stringify(history));
+  renderHistory();
+}
 
-  function createDownloadLink(text, filename) {
-    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    link.textContent = `📥 下载：${filename}`;
-    link.style.display = 'block';
-    document.getElementById('result').appendChild(link);
+function exportTXT() {
+  if (!latestReport) return alert("请先点击“计算报表”");
+  const today = new Date().toISOString().slice(0, 10);
+  const blob = new Blob([latestReport], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `报表-${today}.txt`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function renderHistory() {
+  const list = document.getElementById('historyList');
+  const history = JSON.parse(localStorage.getItem('profitHistory') || '[]');
+  list.innerHTML = '';
+  let total = 0;
+  history.forEach(item => {
+    total += parseFloat(item.profit);
+    const li = document.createElement('li');
+    li.textContent = `${item.date}：${item.profit} U`;
+    list.appendChild(li);
+  });
+  if (history.length > 0) {
+    const li = document.createElement('li');
+    li.innerHTML = `<strong>📊 总利润合计：${total.toFixed(2)} U</strong>`;
+    list.appendChild(li);
   }
+}
 
-  // ================== 报表功能 ==================
-  let latestReport = '';
-  function addRow(group = '', count = '', price = '', remark = '') {
-    const tbody = document.querySelector('#groupTable tbody');
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><input value="${group}" class="groupName"></td>
-      <td><input type="number" value="${count}" class="count" oninput="updateIncome(this)"></td>
-      <td><input type="number" value="${price}" class="price" oninput="updateIncome(this)"></td>
-      <td><input class="income" readonly></td>
-      <td><input value="${remark}" class="remark"></td>
-      <td><button onclick="this.closest('tr').remove(); saveDraft();">删除</button></td>
-    `;
-    tbody.appendChild(tr);
-    updateIncome(tr.querySelector('.count'));
-  }
-
-  function updateIncome(elem) {
-    const row = elem.closest('tr');
-    const count = parseFloat(row.querySelector('.count').value) || 0;
-    const price = parseFloat(row.querySelector('.price').value) || 0;
-    row.querySelector('.income').value = (count * price).toFixed(2);
-    saveDraft();
-  }
-
-  function calculate() {
-    const rows = document.querySelectorAll('#groupTable tbody tr');
-    const baseCost = parseFloat(document.getElementById('baseCost').value) || 0;
-    const salaryCost = parseFloat(document.getElementById('salaryCost').value) || 0;
-    const rebateGroup = document.getElementById('rebateGroup').value.trim();
-    const rebateRate = parseFloat(document.getElementById('rebateRate').value) || 0;
-
-    let totalCount = 0, totalIncome = 0, rebateAmount = 0, lines = [];
-    let errorMessages = [];
-
-    rows.forEach(row => {
-        const group = row.querySelector('.groupName').value.trim();
-        const count = parseFloat(row.querySelector('.count').value) || 0;
-        const price = parseFloat(row.querySelector('.price').value) || 0;
-        const income = count * price;
-        const remark = row.querySelector('.remark').value.trim();
-        
-        // 新增情况：出号数 > 0 且 收入为负
-        if (count > 0 && income < 0) {
-            errorMessages.push(`问题：群【${group}】的出号数为 ${count}，但收入为 负，卖什么号不要卖了 还倒贴！！`);
-        }
-
-        // 原有情况：出号数 > 0 且 收入为 0
-        if (count > 0 && income === 0) {
-            errorMessages.push(`问题：群【${group}】的出号数为 ${count}，但收入为 0，不要这样帮老板省钱！！`);
-        }
-
-        totalCount += count;
-        totalIncome += income;
-        let line = `${group.padEnd(8)} 出号数: ${count}    单价: ${price}    收入: ${income.toFixed(2)}`;
-        if (remark) line += `    备注: ${remark}`;
-        lines.push(line);
-        if (group === rebateGroup) rebateAmount = count * rebateRate;
-    });
-
-    const totalCost = baseCost + salaryCost + rebateAmount;
-    const profit = totalIncome - totalCost;
-    const agentFee = profit * 0.1;
-    const finalProfit = profit - agentFee;
-
-    if (errorMessages.length > 0) {
-        alert(`⚠️ 导出报表时出错：\n\n${errorMessages.join('\n')}`);
-        return;
-    }
-
-    let output = `📅 群发号明细\n\n`;
-    output += lines.map(line => line + '\n').join('\n');
-    output += `\n📌 合计出号数：${totalCount} 个\n\n`;
-    output += `📌 合计收入：${totalIncome.toFixed(2)} U\n\n`;
-    output += `一、真机协议成本：${baseCost.toFixed(2)} U\n\n`;
-    output += `二、工资支出：${salaryCost.toFixed(2)} U\n\n`;
-    output += `三、返点（${rebateGroup}）：${rebateAmount.toFixed(2)} U\n\n`;
-    output += `四、总支出：${totalCost.toFixed(2)} U\n\n`;
-    output += `五、利润：${totalIncome.toFixed(2)} - ${totalCost.toFixed(2)} = ${profit.toFixed(2)} U\n\n`;
-    output += `六、代理提成（10%）：${agentFee.toFixed(2)} U\n\n`;
-    output += `✅ 最终利润：${finalProfit.toFixed(2)} U\n`;
-
-    latestReport = output;
-    document.getElementById('output').textContent = output;
-
-    const today = new Date().toISOString().slice(0, 10);
-    let history = JSON.parse(localStorage.getItem('profitHistory') || '[]');
-    const currentProfit = parseFloat(finalProfit.toFixed(2));
-    const index = history.findIndex(item => item.date === today);
-    if (index >= 0) {
-        if (currentProfit > parseFloat(history[index].profit)) {
-            history[index].profit = currentProfit.toFixed(2);
-        }
-    } else {
-        history.push({ date: today, profit: currentProfit.toFixed(2) });
-    }
-    localStorage.setItem('profitHistory', JSON.stringify(history));
+function clearHistory() {
+  if (confirm("确定清除所有历史记录？")) {
+    localStorage.removeItem('profitHistory');
     renderHistory();
   }
+}
 
-  function exportTXT() {
-    if (!latestReport) return alert("请先点击“计算报表”");
-    const today = new Date().toISOString().slice(0, 10);
-    const blob = new Blob([latestReport], { type: 'text/plain' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `报表-${today}.txt`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  }
-
-  function renderHistory() {
-    const list = document.getElementById('historyList');
-    const history = JSON.parse(localStorage.getItem('profitHistory') || '[]');
-    list.innerHTML = '';
-    let total = 0;
-    history.forEach(item => {
-      total += parseFloat(item.profit);
-      const li = document.createElement('li');
-      li.textContent = `${item.date}：${item.profit} U`;
-      list.appendChild(li);
-    });
-    if (history.length > 0) {
-      const li = document.createElement('li');
-      li.innerHTML = `<strong>📊 总利润合计：${total.toFixed(2)} U</strong>`;
-      list.appendChild(li);
-    }
-  }
-
-  function clearHistory() {
-    if (confirm("确定清除所有历史记录？")) {
-      localStorage.removeItem('profitHistory');
-      renderHistory();
-    }
-  }
-
-  function exportHistory() {
-    const history = JSON.parse(localStorage.getItem('profitHistory') || '[]');
-    if (!history.length) return alert("暂无历史记录");
-    let total = 0;
-    let text = `📈 历史利润记录\n\n`;
-    history.forEach(item => {
-      total += parseFloat(item.profit);
-      text += `${item.date}：${item.profit} U\n\n`;
-    });
-    text += `📊 总利润合计：${total.toFixed(2)} U\n`;
-
-    const today = new Date().toISOString().slice(0, 10);
-    const blob = new Blob([text], { type: 'text/plain' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `历史利润-${today}.txt`;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  }
-
-  // ======= 暂存功能 =======
-  function saveDraft() {
-    const rows = document.querySelectorAll('#groupTable tbody tr');
-    const draftData = {
-      groups: [],
-      baseCost: document.getElementById('baseCost').value,
-      salaryCost: document.getElementById('salaryCost').value,
-      rebateGroup: document.getElementById('rebateGroup').value,
-      rebateRate: document.getElementById('rebateRate').value
-    };
-    rows.forEach(row => {
-      draftData.groups.push({
-        groupName: row.querySelector('.groupName').value,
-        count: row.querySelector('.count').value,
-        price: row.querySelector('.price').value,
-        remark: row.querySelector('.remark').value
-      });
-    });
-    localStorage.setItem('reportDraft', JSON.stringify(draftData));
-  }
-
-  function loadDraft() {
-    const draft = localStorage.getItem('reportDraft');
-    if (!draft) return false;
-    const data = JSON.parse(draft);
-    document.querySelector('#groupTable tbody').innerHTML = '';
-    data.groups.forEach(g => {
-      addRow(g.groupName, g.count, g.price, g.remark);
-    });
-    document.getElementById('baseCost').value = data.baseCost;
-    document.getElementById('salaryCost').value = data.salaryCost;
-    document.getElementById('rebateGroup').value = data.rebateGroup;
-    document.getElementById('rebateRate').value = data.rebateRate;
-    return true;
-  }
-
-  function clearDraft() {
-    if (confirm("确定清除暂存数据？")) {
-      localStorage.removeItem('reportDraft');
-      alert("暂存已清除");
-    }
-  }
-
-  document.addEventListener('input', function (e) {
-    if (e.target.closest('#section-report')) {
-      saveDraft();
-    }
+function exportHistory() {
+  const history = JSON.parse(localStorage.getItem('profitHistory') || '[]');
+  if (!history.length) return alert("暂无历史记录");
+  let total = 0;
+  let text = `📈 历史利润记录\n\n`;
+  history.forEach(item => {
+    total += parseFloat(item.profit);
+    text += `${item.date}：${item.profit} U\n\n`;
   });
+  text += `📊 总利润合计：${total.toFixed(2)} U\n`;
+  const today = new Date().toISOString().slice(0, 10);
+  const blob = new Blob([text], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `历史利润-${today}.txt`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
 
-  // ✅ 新增导入/导出 JSON 功能
-  document.getElementById('exportJsonBtn').addEventListener('click', () => {
-    const report = localStorage.getItem('reportDraft');
-    const history = localStorage.getItem('profitHistory');
-    if (!report && !history) return alert('⚠️ 没有可导出的数据！');
-    const data = { reportDraft: JSON.parse(report || '{}'), profitHistory: JSON.parse(history || '[]') };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `报表备份-${new Date().toLocaleDateString()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+function saveDraft() {
+  const rows = document.querySelectorAll('#groupTable tbody tr');
+  const draftData = {
+    groups: [],
+    baseCost: document.getElementById('baseCost').value,
+    salaryCostA: document.getElementById('salaryCostA').value,
+    salaryCostB: document.getElementById('salaryCostB').value,
+    rebateGroup: document.getElementById('rebateGroup').value,
+    rebateRate: document.getElementById('rebateRate').value
+  };
+  rows.forEach(row => {
+    draftData.groups.push({
+      groupName: row.querySelector('.groupName').value,
+      count: row.querySelector('.count').value,
+      price: row.querySelector('.price').value,
+      remark: row.querySelector('.remark').value
+    });
   });
+  localStorage.setItem('reportDraft', JSON.stringify(draftData));
+}
 
-  const fileInput = document.getElementById('importJsonFile');
-  document.getElementById('importJsonBtn').addEventListener('click', () => fileInput.click());
-  fileInput.addEventListener('change', e => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = evt => {
-      try {
-        const json = JSON.parse(evt.target.result);
-        if (!json || typeof json !== 'object') throw new Error();
-        if (json.reportDraft) localStorage.setItem('reportDraft', JSON.stringify(json.reportDraft));
-        if (json.profitHistory) localStorage.setItem('profitHistory', JSON.stringify(json.profitHistory));
-        alert('✅ 导入成功，页面将自动刷新以加载新数据。');
-        location.reload();
-      } catch {
-        alert('❌ 文件格式错误，请确认 JSON 内容正确。');
-      }
-    };
-    reader.readAsText(file);
-    fileInput.value = '';
-  });
+function loadDraft() {
+  const draft = localStorage.getItem('reportDraft');
+  if (!draft) return false;
+  const data = JSON.parse(draft);
+  document.querySelector('#groupTable tbody').innerHTML = '';
+  data.groups.forEach(g => addRow(g.groupName, g.count, g.price, g.remark));
+  document.getElementById('baseCost').value = data.baseCost;
+  document.getElementById('salaryCostA').value = data.salaryCostA || 0;
+  document.getElementById('salaryCostB').value = data.salaryCostB || 0;
+  document.getElementById('rebateGroup').value = data.rebateGroup;
+  document.getElementById('rebateRate').value = data.rebateRate;
+  return true;
+}
+
+function clearDraft() {
+  if (confirm("确定清除暂存数据？")) {
+    localStorage.removeItem('reportDraft');
+    alert("暂存已清除");
+  }
+}
+
+document.addEventListener('input', e => {
+  if (e.target.closest('#section-report')) saveDraft();
+});
+
+// 导入/导出 JSON 保持原样
+document.getElementById('exportJsonBtn').addEventListener('click', () => {
+  const report = localStorage.getItem('reportDraft');
+  const history = localStorage.getItem('profitHistory');
+  if (!report && !history) return alert('⚠️ 没有可导出的数据！');
+  const data = { reportDraft: JSON.parse(report || '{}'), profitHistory: JSON.parse(history || '[]') };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `报表备份-${new Date().toLocaleDateString()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+const fileInput = document.getElementById('importJsonFile');
+document.getElementById('importJsonBtn').addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = evt => {
+    try {
+      const json = JSON.parse(evt.target.result);
+      if (!json || typeof json !== 'object') throw new Error();
+      if (json.reportDraft) localStorage.setItem('reportDraft', JSON.stringify(json.reportDraft));
+      if (json.profitHistory) localStorage.setItem('profitHistory', JSON.stringify(json.profitHistory));
+      alert('✅ 导入成功，页面将自动刷新。');
+      location.reload();
+    } catch { alert('❌ 文件格式错误。'); }
+  };
+  reader.readAsText(file);
+  fileInput.value = '';
+});
+
 
   // 初始化
   window.addEventListener('load', function () {
@@ -427,6 +385,55 @@
     }
     renderHistory();
   });
+
+// ============ 工资支出汇总功能 ============
+function sumSalaryReports() {
+  const files = document.getElementById('salaryFiles').files;
+  if (!files.length) return alert("请先选择一份或多份报表 TXT 文件！");
+
+  let totalA = 0, totalB = 0;
+  let lines = [];
+
+  let processed = 0;
+
+  Array.from(files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const text = e.target.result;
+
+      // ✅ 匹配工资支出任意标签（如 A、B、自定义名称）
+      const regexA = /工资支出([^\：:]+)：([\d.]+)/;
+      const regexB = /工资支出([^\：:]+)：([\d.]+)/g;
+
+      const matches = [...text.matchAll(regexB)];
+      let foundA = null, foundB = null;
+
+      if (matches.length >= 1) foundA = matches[0];
+      if (matches.length >= 2) foundB = matches[1];
+
+      if (foundA) {
+        totalA += parseFloat(foundA[2]) || 0;
+        lines.push(`${file.name} - 工资支出${foundA[1]}：${foundA[2]} U`);
+      }
+      if (foundB) {
+        totalB += parseFloat(foundB[2]) || 0;
+        lines.push(`${file.name} - 工资支出${foundB[1]}：${foundB[2]} U`);
+      }
+
+      processed++;
+      if (processed === files.length) {
+        const total = (totalA + totalB).toFixed(2);
+        let summary = `📊 汇总明细：\n\n${lines.join('\n')}\n\n`;
+        summary += `📌 工资支出A合计：${totalA.toFixed(2)} U\n`;
+        summary += `📌 工资支出B合计：${totalB.toFixed(2)} U\n`;
+        summary += `✅ 工资支出总计：${total} U\n`;
+        document.getElementById('salarySummary').textContent = summary;
+      }
+    };
+    reader.readAsText(file);
+  });
+}
+
 </script>
 </body>
 </html>

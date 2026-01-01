@@ -76,10 +76,10 @@
   
   <!-- ✅ 改为 工资A+B -->
   <label>工资支出 <input type="text" id="salaryLabelA" value="F" style="width:40px;text-align:center;"> ：</label>
-<input type="number" id="salaryCostA" value="70">
+<input type="number" id="salaryCostA" value="0">
 
 <label>工资支出 <input type="text" id="salaryLabelB" value="Y" style="width:40px;text-align:center;"> ：</label>
-<input type="number" id="salaryCostB" value="40">
+<input type="number" id="salaryCostB" value="57">
 
 
   <label>返点群名：</label>
@@ -198,7 +198,7 @@ function calculate() {
 
   const totalCost = baseCost + salaryCost + rebateAmount;
   const profit = totalIncome - totalCost;
-  const agentFee = profit * 0.1;
+  const agentFee = profit * 0.15;
   const finalProfit = profit - agentFee;
 
   if (errorMessages.length > 0) {
@@ -221,7 +221,7 @@ output += `三、工资支出${labelB}：${salaryB.toFixed(2)} U\n\n`;
   output += `四、返点（${rebateGroup}）：${rebateAmount.toFixed(2)} U\n\n`;
   output += `五、总支出：${totalCost.toFixed(2)} U\n\n`;
   output += `六、利润：${totalIncome.toFixed(2)} - ${totalCost.toFixed(2)} = ${profit.toFixed(2)} U\n\n`;
-  output += `七、代理提成（10%）：${agentFee.toFixed(2)} U\n\n`;
+  output += `七、代理提成（15%）：${agentFee.toFixed(2)} U\n\n`;
   output += `✅ 最终利润：${finalProfit.toFixed(2)} U\n`;
 
   latestReport = output;
